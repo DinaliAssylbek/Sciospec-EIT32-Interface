@@ -14,10 +14,8 @@ errors = {
 def init_serial():
   ser = serial.Serial('COM3', baudrate=9600, timeout=2,parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,bytesize=serial.EIGHTBITS)
   if ser.is_open:
-    # print(f"Serial port {ser.port} opened successfully.")
     return ser
   else:
-    #   print(f"Failed to open serial port {ser.port}.")
       return None
 
 def valid_argument(setting, value, ser):

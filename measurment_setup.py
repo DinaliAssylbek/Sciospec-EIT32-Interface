@@ -2,6 +2,37 @@ import struct
 import shared_functions as sf
 
 def set_measurement_setup(parameters):
+  '''
+    matlab_struct = struct();
+    matlab_struct.('Burst Count') = (int) 0 - 65535 [Defualt : 0];
+    matlab_struct.('Frame Rate') = (float) 0.1 - 100 [Default : 1];
+    matlab_struct.('Excitation Frequency') = 
+    [
+      frequency_struct = struct();
+      frequency_struct.('Fmin') = (float) 100 Hz - 10 MHz [Default : 100 kHz];
+      frequency_struct.('Fmax') = (float) 100 Hz - 10 MHz [Defualt : 100 kHz];
+      frequency_struct.('Fcount') = (int) 1 - 128 [Defualt : 1];
+      frequency_struct.('Ftype') = (int) 0 - linear frequency distribution | 1 - logarithmic frequency distribution [Default : 0];
+    ]
+    matlab_struct.('Excitation Amplitude') = (float) 100 nA - 10 mA [Default : 0.01 A];
+    matlab_struct.('Excitation Sequence') = (array) [(CDout, CDin), ];
+    matlab_struct.('Single Ended') = ;
+    matlab_struct.('Differential Measure Mode') = ;
+    
+      
+
+    struct(
+        'Burst Count', (int) 0 - 65535 [Defualt : 0], 
+        'Frame Rate', 0 - Off : 1 - On, 
+        'Excitation Frequency', 0 - Off : 1 - On,
+        'Excitation Amplitude', ,
+        'Single Ended', ,
+        'Differential Measure Mode', ,
+        'Excitation Sequence', ,
+        'Excitation Switch Type', ,()
+        'ADC Range', ,
+    );
+  '''
   ser = sf.init_serial()
 
   # First Reset Parameters to default
@@ -113,10 +144,17 @@ def get_measurement_setup():
   # Get Excitation Sequence
   ser.write(bytearray([0xB1, 0x01, 0x06, 0xB1]))
   output = sf.read_measurment(ser)
+  print(output)
+  if len(output) < 33:
+    output = output[3:-2]
+  else:
+    output = output[3:31] + output[35:-1]
+  print(output)
   sequence = []
-  for i in range(0, len(output), 8):
-    curr = output[i:i+8]
-    sequence.append(({((curr[5]<< 8) | curr[6])},{((curr[3] << 8) | curr[4])}))
-  configs += sequence
+  for i in range(0, len(output), 4):
+    curr = output[i:i+4]
+    print(curr)
+    sequence.append(({((curr[2]<< 8) | curr[3])},{((curr[0] << 8) | curr[1])}))
+  configs += [sequence]
   ser.close()
   return configs
