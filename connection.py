@@ -16,8 +16,8 @@ from datetime import datetime
 
 
 params = {
-  "Burst Count" : 1000,
-  "Frame Rate" : 50,
+  "Burst Count" : 100,
+  "Frame Rate" : 5,
   "Excitation Frequencies" : {"Fmin" : 50000, "Fmax": 50000, "Ftype": 0},
   "Excitation Amplitude" : 0.001,
   "Excitation Switch Type" : 2,
@@ -33,7 +33,7 @@ configurations = {
 }
 
 sequence_display = {
-  "Excitation Sequence" : [(1,3), (4,6)]
+  "Excitation Sequence" : [2,5]
 }
 
     
@@ -56,6 +56,7 @@ def process_data(q, stop_event, configs, dataset_name, directory_path, live_data
   file_output = ['18'],
   the_first = [],
   curr_sequence = -1
+  curr_display = -1
   file_num = 0
   while not stop_event.is_set() or not q.empty():
     try:
@@ -101,9 +102,11 @@ def process_data(q, stop_event, configs, dataset_name, directory_path, live_data
                     float_number = struct.unpack('>f', bytes(byte_chunk))[0]
                     floats.append(float_number)
                 curr_sequence = (curr_sequence + 1) % len(sequence)
-                for index in range(len(live_data_queue[0])):
-                  live_data_queue[0][index].put(floats[index * 2])
-                live_timestamp_queue[0].put(time.time())
+                if curr_sequence in sequence_display["Excitation Sequence"]:
+                  curr_display = (curr_display + 1) % len(sequence_display["Excitation Sequence"])
+                  for index in range(len(live_data_queue[0])):
+                    live_data_queue[0][index].put(floats[index * 2])
+                  live_timestamp_queue[0].put(time.time())
                 file_output += [' '.join(map(str, floats))]
             else:
               if current_frame[2] == 1:
@@ -117,9 +120,11 @@ def process_data(q, stop_event, configs, dataset_name, directory_path, live_data
                     float_number = struct.unpack('>f', bytes(byte_chunk))[0]
                     floats.append(float_number)
                 curr_sequence = (curr_sequence + 1) % len(sequence)
-                for index in range(len(live_data_queue[0])):
-                  live_data_queue[curr_sequence][index].put(floats[index * 2])
-                live_timestamp_queue[curr_sequence].put(time.time())
+                if curr_sequence in sequence_display["Excitation Sequence"]:
+                  curr_display = (curr_display + 1) % len(sequence_display["Excitation Sequence"])
+                  for index in range(len(live_data_queue[0])):
+                    live_data_queue[curr_display][index].put(floats[index * 2])
+                  live_timestamp_queue[curr_display].put(time.time())
                 file_output += [' '.join(map(str, floats))]
             frame_started = False
     except Empty:
@@ -145,10 +150,6 @@ def StartStopMeasurement(q, stop_event) -> list:
     return measurement_data_hex
 
 def measurment(dataset_name, directory_path, live_data_queue, live_timestamp_queue, configs):
-  # configs = get_measurement_setup()
-  # for i in range(len(configs[-1])):
-  #   live_data_queue.append([Queue() for j in range(8)])
-  #   live_timestamp_queue.append(Queue())
   q = Queue()
   stop_event = Event()
   read_process = Process(target=StartStopMeasurement, args=(q, stop_event))
@@ -175,15 +176,19 @@ def update_graph(frame, x_data, y_data, live_data_queue, lines, live_timestamp_q
 
 def measure():
   configs = get_measurement_setup()
-  print(configs[-1])
-  live_data_queue = [[Queue() for i in range(8)] for j in range(len(configs[-1]))]
-  live_timestamp_queue = [Queue() for i in range(len(configs[-1]))]
+  live_data_queue = [[Queue() for i in range(8)] for j in range(len(sequence_display["Excitation Sequence"]))]
+  live_timestamp_queue = [Queue() for i in range(len(sequence_display["Excitation Sequence"]))]
   measurment('hello', 'D:/Sciospec-EIT32-Interface/test_output', live_data_queue, live_timestamp_queue, configs)
   figs, axes, lines, anis = [], [], [], []
-  for i in range(len(configs[-1])):
-    fig, ax = plt.subplots(8,1, sharex=True)
+  for i in range(len(sequence_display["Excitation Sequence"])):
+    fig, ax = plt.subplots(8,1, sharex=True, figsize=(7, 8))
+    fig.suptitle(f'Excitation Sequence: {str(params["Excitation Sequence"][sequence_display["Excitation Sequence"][i]])}')
+    fig.canvas.manager.window.wm_geometry(f"+{0 + i * 1000}+0")
     figs.append(fig)
     axes.append(ax)
+    for j, subplot in enumerate(ax):
+      subplot.set_title(f'Node: {j + 1}', loc='left')
+    plt.subplots_adjust(hspace=0.7)
     
     x_data, y_data = [], [[] for _ in range(8)]
     line = [a.plot([], [])[0] for a in ax]
@@ -193,24 +198,8 @@ def measure():
     anis.append(ani)
   plt.show()
 
-
 if __name__ == '__main__':
+  print("Loading...")
   set_measurement_setup(params)
   set_output_config(configurations)
   measure()
-  # live_data_queue = [[Queue() for i in range(8)] for j in range(1)]
-  # live_timestamp_queue = [Queue()]
-  # measurment('hello', '//chips.eng.utah.edu/home/u1462232/.win_desktop/Sciospec-EIT32-Interface/test_output', live_data_queue, live_timestamp_queue)
-  # figs, axes, lines, anis = [], [], [], []
-  # for i in range(2):
-  #   fig, ax = plt.subplots(8,1, sharex=True)
-  #   figs.append(fig)
-  #   axes.append(ax)
-    
-  #   x_data, y_data = [], [[] for _ in range(8)]
-  #   line = [a.plot([], [])[0] for a in ax]
-  #   lines.append(line)
-
-  #   ani = animation.FuncAnimation(fig, update_graph, fargs=(x_data, y_data, live_data_queue[i], line, live_timestamp_queue), interval=1000)
-  #   anis.append(ani)
-  # plt.show()

@@ -144,16 +144,13 @@ def get_measurement_setup():
   # Get Excitation Sequence
   ser.write(bytearray([0xB1, 0x01, 0x06, 0xB1]))
   output = sf.read_measurment(ser)
-  print(output)
   if len(output) < 33:
     output = output[3:-2]
   else:
     output = output[3:31] + output[35:-1]
-  print(output)
   sequence = []
   for i in range(0, len(output), 4):
     curr = output[i:i+4]
-    print(curr)
     sequence.append(({((curr[2]<< 8) | curr[3])},{((curr[0] << 8) | curr[1])}))
   configs += [sequence]
   ser.close()
