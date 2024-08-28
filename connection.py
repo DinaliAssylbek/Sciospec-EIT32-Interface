@@ -16,8 +16,8 @@ from datetime import datetime
 
 
 params = {
-  "Burst Count" : 100,
-  "Frame Rate" : 5,
+  "Burst Count" : 20,
+  "Frame Rate" : 2,
   "Excitation Frequencies" : {"Fmin" : 50000, "Fmax": 50000, "Ftype": 0},
   "Excitation Amplitude" : 0.001,
   "Excitation Switch Type" : 2,
@@ -92,7 +92,7 @@ def process_data(q, stop_event, configs, dataset_name, directory_path, live_data
                     for line in file_output:
                       file.write(line + '\n')
                 now = datetime.now()
-                file_output = ['18', str(frame_count), dataset_name, now.strftime("%Y.%m.%d. %H:%M:%S.%f")[:-3]] + configs + [str(current_frame[4]) + " " + str(current_frame[3])]
+                file_output = ['18', str(frame_count), dataset_name, now.strftime("%Y.%m.%d. %H:%M:%S.%f")[:-3]] + configs + [str(current_frame[4]) + " " + str(current_frame[3])+ ", " + str(struct.unpack('>I', bytes(current_frame[5:9])))[1:-2]]
               else:
                 all_data = frames[-1][9:-1] + current_frame[9:-1]
                 floats = []
@@ -110,7 +110,7 @@ def process_data(q, stop_event, configs, dataset_name, directory_path, live_data
                 file_output += [' '.join(map(str, floats))]
             else:
               if current_frame[2] == 1:
-                file_output += [str(current_frame[4]) + " " + str(current_frame[3])]
+                file_output += [str(current_frame[4]) + " " + str(current_frame[3]) + ", " + str(struct.unpack('>I', bytes(current_frame[5:9])))[1:-2]]
               else:
                 all_data = frames[-1][9:-1] + current_frame[9:-1]
                 floats = []
