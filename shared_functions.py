@@ -12,7 +12,7 @@ errors = {
 }
 
 def init_serial():
-  ser = serial.Serial('COM3', baudrate=9600, timeout=2,parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,bytesize=serial.EIGHTBITS)
+  ser = serial.Serial('COM3', baudrate=921600, timeout=2,parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,bytesize=serial.EIGHTBITS)
   if ser.is_open:
     return ser
   else:
@@ -25,8 +25,9 @@ def valid_argument(setting, value, ser):
   else:
     print(f'Error Setting {setting}: {errors[output[2]]}')
 
-def read_measurment(ser):
+def read_measurment(ser, arr):
   output = list(ser.readline())
+  arr.append(output)
   if output[-2] == 131:
     return output[:-4]
   else:

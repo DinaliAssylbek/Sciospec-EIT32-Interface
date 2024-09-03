@@ -10,18 +10,18 @@ import shared_functions as sf
 from typing import Union, List
 from multiprocessing import Process, Queue, Event
 from queue import Empty
-from measurment_setup import set_measurement_setup, get_measurement_setup
+from measurment_setup import set_measurement_setup, get_measurement_setup, MeasurmentSetup
 from output_configs import set_output_config, get_output_config
 from datetime import datetime
 
 
 params = {
-  "Burst Count" : 20,
-  "Frame Rate" : 2,
+  "Burst Count" : 100,
+  "Frame Rate" : 50,
   "Excitation Frequencies" : {"Fmin" : 50000, "Fmax": 50000, "Ftype": 0},
   "Excitation Amplitude" : 0.001,
   "Excitation Switch Type" : 2,
-  "Excitation Sequence" : [(1,3), (2,4), (3,5), (4,6), (5,7), (6,8), (7,1), (8,2)],
+  "Excitation Sequence" : [(2,4), (5,6), (1,3), (7,8), (5,7), (6,8), (7,1), (8,2)],
   "ADC Range" : 2,
   "Single Ended": {"Mode": 1, "Boundary": 1}
 }
@@ -33,7 +33,7 @@ configurations = {
 }
 
 sequence_display = {
-  "Excitation Sequence" : [2,5]
+  "Excitation Sequence" : [0,1]
 }
 
     
@@ -94,7 +94,7 @@ def process_data(q, stop_event, configs, dataset_name, directory_path, live_data
                 now = datetime.now()
                 file_output = ['18', str(frame_count), dataset_name, now.strftime("%Y.%m.%d. %H:%M:%S.%f")[:-3]] + configs + [str(current_frame[4]) + " " + str(current_frame[3])+ ", " + str(struct.unpack('>I', bytes(current_frame[5:9])))[1:-2]]
               else:
-                all_data = frames[-1][9:-1] + current_frame[9:-1]
+                all_data = frames[-2][9:-1] + current_frame[9:-1]
                 floats = []
                 for i in range(0, len(all_data), 4):
                   byte_chunk = all_data[i:i+4]
@@ -112,7 +112,7 @@ def process_data(q, stop_event, configs, dataset_name, directory_path, live_data
               if current_frame[2] == 1:
                 file_output += [str(current_frame[4]) + " " + str(current_frame[3]) + ", " + str(struct.unpack('>I', bytes(current_frame[5:9])))[1:-2]]
               else:
-                all_data = frames[-1][9:-1] + current_frame[9:-1]
+                all_data = frames[-2][9:-1] + current_frame[9:-1]
                 floats = []
                 for i in range(0, len(all_data), 4):
                   byte_chunk = all_data[i:i+4]
@@ -174,8 +174,9 @@ def update_graph(frame, x_data, y_data, live_data_queue, lines, live_timestamp_q
         ax.set_ylim(min(y_data[i]), max(y_data[i]))
     return lines
 
-def measure():
-  configs = get_measurement_setup()
+def measure(setup):
+  configs = setup.get_measurement_setup()
+  setup.close_connection()
   live_data_queue = [[Queue() for i in range(8)] for j in range(len(sequence_display["Excitation Sequence"]))]
   live_timestamp_queue = [Queue() for i in range(len(sequence_display["Excitation Sequence"]))]
   measurment('hello', 'D:/Sciospec-EIT32-Interface/test_output', live_data_queue, live_timestamp_queue, configs)
@@ -200,6 +201,8 @@ def measure():
 
 if __name__ == '__main__':
   print("Loading...")
-  set_measurement_setup(params)
-  set_output_config(configurations)
-  measure()
+  setup = MeasurmentSetup()
+  setup.set_measurment_setup(params)
+  setup.set_output_config(configurations)
+  setup.get_measurement_setup()
+  measure(setup)
