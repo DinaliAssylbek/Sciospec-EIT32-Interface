@@ -10,8 +10,7 @@ import shared_functions as sf
 from typing import Union, List
 from multiprocessing import Process, Queue, Event
 from queue import Empty
-from measurment_setup import set_measurement_setup, get_measurement_setup, MeasurmentSetup
-from output_configs import set_output_config, get_output_config
+from measurment_setup import MeasurmentSetup
 from datetime import datetime
 
 
